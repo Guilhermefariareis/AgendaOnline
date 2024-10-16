@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento Crédito Odonto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .input-field {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .verificar-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .verificar-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .horarios {
+            display: none;
+        }
+        .horario {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-align: center;
+        }
+        .horario:hover {
+            background-color: #45a049;
+        }
+        .mensagem {
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .cronometro {
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .saudacao {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Agendamento Crédito Odonto</h1>
+        <div id="cronometro" class="cronometro"></div>
+        <input type="text" id="nome" class="input-field" placeholder="Digite seu nome" onkeyup="habilitarBotao()">
+        <input type="tel" id="telefone" class="input-field" placeholder="Digite seu telefone" onkeyup="habilitarBotao()" oninput="mascaraTelefone(this)" maxlength="15">
+        <button id="verificarBtn" class="verificar-btn" onclick="verificarHorarios()" disabled>Verificar Horários Disponíveis</button>
+        <div id="horarios" class="horarios"></div>
+        <div id="mensagem" class="mensagem"></div>
+        <div id="saudacao" class="saudacao"></div>
+    </div>
+
+    <script>
+        let dataAtual;
+
+        function inicializarDataAtual() {
+    // Cria a data atual, considerando o fuso horário de São Paulo
+    const dataAtualBrasilia = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+    
+    // Utiliza a data atual para definir o valor da variável 'dataAtual'
+    dataAtual = new Date(dataAtualBrasilia);
+}
+
+
+        function atualizarCronometro() {
+            const cronometroElement = document.getElementById('cronometro');
+            cronometroElement.textContent = `Data Atual: ${dataAtual.toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'})}`;
+            dataAtual.setSeconds(dataAtual.getSeconds() + 1);
+            setTimeout(atualizarCronometro, 1000);
+        }
+
+        const horariosFuncionamento = {
+            1: { inicio: "09:00", fim: "18:00" }, // Segunda
+            2: { inicio: "09:00", fim: "18:00" }, // Terça
+            3: { inicio: "09:00", fim: "18:00" }, // Quarta
+            4: { inicio: "09:00", fim: "18:00" }, // Quinta
+            5: { inicio: "09:00", fim: "18:00" }, // Sexta
+            6: { inicio: "09:00", fim: "12:00" }, // Sábado
+            0: null // Domingo - fechado
+        };
+
+        function obterProximosDiasUteis(quantidadeDias) {
+            const diasUteis = [];
+            let dataVerificacao = new Date(dataAtual);
+
+            while (diasUteis.length < quantidadeDias) {
+                if (dataVerificacao.getDay() !== 0) { // Não é domingo
+                    const horariosDia = horariosFuncionamento[dataVerificacao.getDay()];
+                    if (horariosDia) {
+                        diasUteis.push(new Date(dataVerificacao));
+                    }
+                }
+                dataVerificacao.setDate(dataVerificacao.getDate() + 1);
+            }
+
+            return diasUteis;
+        }
+
+        function gerarHorarioAleatorio(data) {
+            const diaSemana = data.getDay();
+            const horariosDia = horariosFuncionamento[diaSemana];
+            
+            if (!horariosDia) return null;
+
+            let [inicioHoras, inicioMinutos] = horariosDia.inicio.split(':').map(Number);
+            const [fimHoras, fimMinutos] = horariosDia.fim.split(':').map(Number);
+
+            if (data.toDateString() === dataAtual.toDateString()) {
+                inicioHoras = Math.max(inicioHoras, dataAtual.getHours());
+                if (inicioHoras === dataAtual.getHours()) {
+                    inicioMinutos = Math.max(inicioMinutos, dataAtual.getMinutes() + 1);
+                }
+            }
+
+            const inicio = inicioHoras * 60 + inicioMinutos;
+            const fim = fimHoras * 60 + fimMinutos - 30;
+            const intervalo = 30;
+
+            if (inicio >= fim) return null;
+
+            const minutos = Math.floor(Math.random() * ((fim - inicio) / intervalo)) * intervalo + inicio;
+            const horas = Math.floor(minutos / 60);
+            const minutosRestantes = minutos % 60;
+
+            return `${horas.toString().padStart(2, '0')}:${minutosRestantes.toString().padStart(2, '0')}`;
+        }
+
+        function gerarHorarios() {
+            const proximosDiasUteis = obterProximosDiasUteis(2);
+            const horarios = [];
+
+            while (horarios.length < 3) {
+                const diaAleatorio = proximosDiasUteis[Math.floor(Math.random() * proximosDiasUteis.length)];
+                const horario = gerarHorarioAleatorio(diaAleatorio);
+                
+                if (horario) {
+                    const [horas, minutos] = horario.split(':').map(Number);
+                    const dataFormatada = `${diaAleatorio.getFullYear()}-${(diaAleatorio.getMonth() + 1).toString().padStart(2, '0')}-${diaAleatorio.getDate().toString().padStart(2, '0')}`;
+                    const fromTime = `${dataFormatada} ${horario}`;
+                    const toTime = new Date(diaAleatorio);
+                    toTime.setHours(horas);
+                    toTime.setMinutes(minutos + 30);
+                    const toTimeFormatted = `${toTime.getFullYear()}-${toTime.getMonth() + 1}-${toTime.getDate()} ${toTime.getHours().toString().padStart(2, '0')}:${toTime.getMinutes().toString().padStart(2, '0')}`;
+                    const horarioCompleto = { fromTime: fromTime, toTime: toTimeFormatted };
+                    if (!horarios.some(h => h.fromTime === fromTime)) {
+                        horarios.push(horarioCompleto);
+                    }
+                }
+            }
+
+            return horarios;
+        }
+
+        function exibirHorarios(horarios) {
+            const horariosDiv = document.getElementById('horarios');
+            horariosDiv.innerHTML = '';
+            
+            horarios.forEach(horario => {
+                const horarioElement = document.createElement('div');
+                horarioElement.className = 'horario';
+                horarioElement.textContent = `${horario.fromTime} - ${horario.toTime}`;
+                horarioElement.onclick = () => processarAgendamento(horario);
+                horariosDiv.appendChild(horarioElement);
+            });
+
+            horariosDiv.style.display = 'block';
+        }
+
+        function processarAgendamento(horario) {
+            const nome = document.getElementById('nome').value;
+            const telefone = document.getElementById('telefone').value;
+            const mensagemDiv = document.getElementById('mensagem');
+            mensagemDiv.textContent = 'Processando seu agendamento...';
+
+            if (!nome || !telefone || !horario) {
+                mensagemDiv.textContent = 'Todos os campos são obrigatórios!';
+                return;
+            }
+
+            fetch('/agendar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nome: nome, telefone: telefone, fromTime: horario.fromTime, toTime: horario.toTime })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro na requisição para o servidor: ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.message) {
+                    mensagemDiv.textContent = data.message;
+                    exibirSaudacao(nome, horario.fromTime);
+                } else {
+                    mensagemDiv.textContent = 'Erro ao processar agendamento.';
+                }
+                document.getElementById('horarios').style.display = 'none';
+            })
+            .catch(error => {
+                mensagemDiv.textContent = `Erro ao processar agendamento: ${error.message}`;
+                document.getElementById('horarios').style.display = 'none';
+            });
+        }
+
+        function exibirSaudacao(nome, horarioAgendado) {
+            const saudacaoDiv = document.getElementById('saudacao');
+            const dataHora = new Date(horarioAgendado);
+            const dataFormatada = dataHora.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            saudacaoDiv.innerHTML = `
+                <p>Olá ${nome}!</p>
+                <p>Seu agendamento foi realizado com sucesso para:</p>
+                <p>${dataFormatada} às ${horaFormatada}</p>
+                <p>Agradecemos pela preferência!</p>
+            `;
+        }
+
+        function verificarHorarios() {
+            const nome = document.getElementById('nome').value.trim();
+            const telefone = document.getElementById('telefone').value.trim();
+            if (nome && telefone) {
+                const horarios = gerarHorarios();
+                exibirHorarios(horarios);
+            }
+        }
+
+        function habilitarBotao() {
+            const nome = document.getElementById('nome').value.trim();
+            const telefone = document.getElementById('telefone').value.trim();
+            document.getElementById('verificarBtn').disabled = !(nome && telefone);
+        }
+
+        function mascaraTelefone(telefoneInput) {
+            telefoneInput.value = telefoneInput.value
+                .replace(/\D/g, '')
+                .replace(/^(\d{2})(\d)/g, '($1) $2')
+                .replace(/(\d{4,5})(\d{4})$/, '$1-$2');
+        }
+        
+        window.onload = () => {
+            inicializarDataAtual();
+            atualizarCronometro();
+        };
+    </script>
+</body>
+</html>
