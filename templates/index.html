@@ -210,44 +210,59 @@
             horariosDiv.style.display = 'block';
         }
 
-        function processarAgendamento(horario) {
-            const nome = document.getElementById('nome').value;
-            const telefone = document.getElementById('telefone').value;
-            const mensagemDiv = document.getElementById('mensagem');
-            mensagemDiv.textContent = 'Processando seu agendamento...';
+          // Função para desabilitar todos os botões de horário
+    function desabilitarBotoesHorarios() {
+        const botoesHorarios = document.querySelectorAll('.horario');
+        botoesHorarios.forEach(botao => {
+            botao.style.backgroundColor = '#cccccc'; // Altera a cor para indicar que está desabilitado
+            botao.style.cursor = 'not-allowed'; // Muda o cursor para indicar que não pode clicar
+            botao.onclick = null; // Remove o evento de clique
+        });
+    }
 
-            if (!nome || !telefone || !horario) {
-                mensagemDiv.textContent = 'Todos os campos são obrigatórios!';
-                return;
-            }
 
-            fetch('/agendar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ nome: nome, telefone: telefone, fromTime: horario.fromTime, toTime: horario.toTime })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erro na requisição para o servidor: ${response.status} ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.message) {
-                    mensagemDiv.textContent = data.message;
-                    exibirSaudacao(nome, horario.fromTime);
-                } else {
-                    mensagemDiv.textContent = 'Erro ao processar agendamento.';
-                }
-                document.getElementById('horarios').style.display = 'none';
-            })
-            .catch(error => {
-                mensagemDiv.textContent = `Erro ao processar agendamento: ${error.message}`;
-                document.getElementById('horarios').style.display = 'none';
-            });
+
+          function processarAgendamento(horario) {
+        const nome = document.getElementById('nome').value;
+        const telefone = document.getElementById('telefone').value;
+        const mensagemDiv = document.getElementById('mensagem');
+        mensagemDiv.textContent = 'Processando seu agendamento...';
+
+        if (!nome || !telefone || !horario) {
+            mensagemDiv.textContent = 'Todos os campos são obrigatórios!';
+            return;
         }
+
+        // Desabilita os botões de horário
+        desabilitarBotoesHorarios();
+
+        fetch('/agendar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ nome: nome, telefone: telefone, fromTime: horario.fromTime, toTime: horario.toTime })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erro na requisição para o servidor: ${response.status} ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.message) {
+                mensagemDiv.textContent = data.message;
+                exibirSaudacao(nome, horario.fromTime);
+            } else {
+                mensagemDiv.textContent = 'Erro ao processar agendamento.';
+            }
+            document.getElementById('horarios').style.display = 'none';
+        })
+        .catch(error => {
+            mensagemDiv.textContent = `Erro ao processar agendamento: ${error.message}`;
+            document.getElementById('horarios').style.display = 'none';
+        });
+    }
 
         function exibirSaudacao(nome, horarioAgendado) {
             const saudacaoDiv = document.getElementById('saudacao');
@@ -263,13 +278,17 @@
         }
 
         function verificarHorarios() {
-            const nome = document.getElementById('nome').value.trim();
-            const telefone = document.getElementById('telefone').value.trim();
-            if (nome && telefone) {
-                const horarios = gerarHorarios();
-                exibirHorarios(horarios);
-            }
-        }
+    const nome = document.getElementById('nome').value.trim();
+    const telefone = document.getElementById('telefone').value.trim();
+    if (nome && telefone) {
+        const horarios = gerarHorarios();
+        exibirHorarios(horarios);
+        
+        // Desabilitar o botão após o primeiro clique
+        document.getElementById('verificarBtn').disabled = true;
+    }
+}
+
 
         function habilitarBotao() {
             const nome = document.getElementById('nome').value.trim();
